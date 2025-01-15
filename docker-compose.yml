@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: chorechamp-mongodb
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - chorechamp-network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chorechamp-backend
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/chorechamp
+      - JWT_SECRET=${JWT_SECRET}
+      - PORT=5050
+      - CLIENT_URL=http://192.168.50.2
+      - EMAIL_HOST=${EMAIL_HOST}
+      - EMAIL_PORT=${EMAIL_PORT}
+      - EMAIL_SECURE=${EMAIL_SECURE}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - EMAIL_FROM=${EMAIL_FROM}
+    depends_on:
+      - mongodb
+    networks:
+      - chorechamp-network
+    restart: unless-stopped
+    mem_limit: 512m
+
+  frontend:
+    build: 
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: chorechamp-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - chorechamp-network
+    restart: unless-stopped
+    mem_limit: 256m
+
+networks:
+  chorechamp-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local
